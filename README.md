@@ -1,0 +1,2 @@
+# MicroMDC
+Standalone MDC encoder
