@@ -1,0 +1,21 @@
+#
+# Makefile for libmdc library
+#
+CC = gcc
+
+all: ../libmdc.a ../libmdc.so
+
+../mdc_decode.o: mdc_decode.h mdc_decode.c mdc_common.c
+	$(CC) -o ../mdc_decode.o -c mdc_decode.c
+
+../mdc_encode.o: mdc_encode.h mdc_encode.c mdc_common.c
+	$(CC) -o ../mdc_encode.o -c mdc_encode.c
+
+../libmdc.a: ../mdc_decode.o ../mdc_encode.o
+	$(AR) rc ../libmdc.a ../mdc_decode.o ../mdc_encode.o
+
+../libmdc.so: ../mdc_decode.o ../mdc_encode.o
+	$(CC) -shared -o ../libmdc.so ../mdc_decode.o ../mdc_encode.o
+
+clean:
+	rm -f ../mdc_decode.o ../mdc_encode.o ../libmdc.a ../libmdc.so
