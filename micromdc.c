@@ -19,14 +19,90 @@
 /* all MDC stuff */
 #include "micromdc_common.h"
 
-int main() {
+static void show_help(char *name) {
+	printf(
+		"\x1b[1;36mMicro\x1b[1;35mMDC\x1b[0;0m, an MDC-1200 encoder\n"
+		"Version %s\n"
+		"\n"
+		"  This can create audio files with custom MDC1200 data.\n"
+		" Intended for GMRS but can be used for amateur radio\n"
+		" too. Output files are 8 kHz sampling rate and 8 bit\n"
+		" resolution.\n"
+		"\n"
+		" Usage: %s DATAPARAMS -o outfile [-h]\n"
+		"\n"
+		" Where DATAPARAMS can be:\n"
+		"  opcode,arg,unitID\n"
+		"          OR\n"
+		"  opcode,arg,unitID,ext1,ext2,ext3,ext4\n"
+		"\n"
+		"  Data fields are in hex\n"
+		"\n"
+		"  Example: 01,00,0123 or 01,00,0123,45,56,78,9a\n"
+		"\n"
+		" -o: output wav file\n"
+		" -h: show this help\n"
+		"\n", VERSION, name
+	);
+}
+
+int main(int argc, char **argv) {
+	int opt;
 	SNDFILE *sf;
 	SF_INFO sf_info;
-	const int sample_rate = 16000;
-	int samples = 16000;
+	const int sample_rate = 8000;
+	int samples = sample_rate;
 	mdc_encoder_t *my_encoder;
 	mdc_sample_t *my_buffer;
 	int ret;
+	char file[64 + 1];
+
+	/* data */
+	char *data_str;
+	unsigned char double_fmt = 0;
+	unsigned char opcode, arg;
+	unsigned short unit_id;
+	unsigned char ext1, ext2, ext3, ext4;
+
+	memset(file, 0, 64);
+
+	while ((opt = getopt(argc, argv, "o:h")) != -1) {
+		switch (opt) {
+			case 'o':
+				strncpy(file, optarg, 64);
+				break;
+			case 'h':
+			default:
+				show_help(argv[0]);
+				return 1;
+		}
+	}
+
+	if (optind < argc) {
+		data_str = argv[optind];
+		if (sscanf(data_str, "%02hhx,%02hhx,%04hx,"
+			"%02hhx,%02hhx,%02hhx,%02hhx",
+			&opcode, &arg, &unit_id,
+			&ext1, &ext2, &ext3, &ext4) == 7) {
+			double_fmt = 1;
+		} else if (sscanf(data_str, "%02hhx,%02hhx,%04hx",
+			&opcode, &arg, &unit_id) == 3) {
+		} else {
+			printf("parsing failed.\n");
+			show_help(argv[0]);
+			return 1;
+		}
+	} else {
+		fprintf(stderr, "nothing to parse.\n");
+		show_help(argv[0]);
+		return 1;
+	}
+
+	if (!file[0]) {
+		fprintf(stderr, "no output file.\n");
+		show_help(argv[0]);
+		return 1;
+	}
 
 	my_encoder = mdc_encoder_new(sample_rate);
 	my_buffer = malloc(samples * sizeof(mdc_sample_t));
@@ -37,7 +113,19 @@ int main() {
 		return 1;
 	}
 
-	ret = mdc_encoder_set_packet(my_encoder, 0x12, 0x34, 0x5678);
+	if (double_fmt) {
+		printf("opt: 0x%02hhx, arg: 0x%02hhx, unitID: 0x%04hx\n"
+			"ext1: 0x%02hhx, ext2: 0x%02hhx, "
+			"ext3: 0x%02hhx, ext4: 0x%02hhx\n",
+			opcode, arg, unit_id, ext1, ext2, ext3, ext4);
+		ret = mdc_encoder_set_double_packet(my_encoder,
+			opcode, arg, unit_id, ext1, ext2, ext3, ext4);
+	} else {
+		printf("opt: 0x%02hhx, arg: 0x%02hhx, unitID: 0x%04hx\n",
+			opcode, arg, unit_id);
+		ret = mdc_encoder_set_packet(my_encoder,
+			opcode, arg, unit_id);
+	}
 
 	if (ret) {
 		fprintf(stderr, "set packet params failed.\n");
@@ -53,21 +141,21 @@ int main() {
 
 	/* if we are at this point the encoder did not blow up */
 
-	printf("done!\n");
+	printf("writing to file: %s.\n", file);
 
-	/* do somethiing with the audio */
+	/* do something with the audio */
 	samples = ret;
 	memset(&sf_info, 0, sizeof(SF_INFO));
 	sf_info.samplerate = sample_rate;
 	sf_info.channels = 1;
-	sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-
-	sf = sf_open("/tmp/test.wav", SFM_WRITE, &sf_info);
+	sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_U8;
+	sf = sf_open(file, SFM_WRITE, &sf_info);
 	sf_write_short(sf, my_buffer, samples);
 	sf_close(sf);
 
 	free(my_buffer);
 	mdc_encoder_close(my_encoder);
+	printf("done!\n");
 	return 0;
 
 fail:

@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 
 /* wave/flac output */
 #include <sndfile.h>
@@ -30,3 +31,5 @@
 
 /* for mdc_encoder_close */
 #include "micromdc_extra.h"
+
+#define VERSION 	"1.0.0"
