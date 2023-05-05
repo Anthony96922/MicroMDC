@@ -16,16 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* for mdc_encoder_close */
+/* all MDC stuff */
 #include "micromdc_common.h"
 
 int main() {
-	const int samples = 1024;
+	SNDFILE *sf;
+	SF_INFO sf_info;
+	const int sample_rate = 16000;
+	int samples = 16000;
 	mdc_encoder_t *my_encoder;
 	mdc_sample_t *my_buffer;
 	int ret;
 
-	my_encoder = mdc_encoder_new(16000);
+	my_encoder = mdc_encoder_new(sample_rate);
 	my_buffer = malloc(samples * sizeof(mdc_sample_t));
 
 	if (!my_encoder) {
@@ -48,11 +51,20 @@ int main() {
 		goto fail;
 	}
 
-	/* if we are aat this point the encoder did not blow up */
+	/* if we are at this point the encoder did not blow up */
 
 	printf("done!\n");
 
 	/* do somethiing with the audio */
+	samples = ret;
+	memset(&sf_info, 0, sizeof(SF_INFO));
+	sf_info.samplerate = sample_rate;
+	sf_info.channels = 1;
+	sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+
+	sf = sf_open("/tmp/test.wav", SFM_WRITE, &sf_info);
+	sf_write_short(sf, my_buffer, samples);
+	sf_close(sf);
 
 	free(my_buffer);
 	mdc_encoder_close(my_encoder);

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* for mdc_encoder_close */
+/* all MDC stuff */
 #include "micromdc_common.h"
 
 /* implement missing _close funcs to avoid memory leaks */

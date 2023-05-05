@@ -18,7 +18,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
+/* wave/flac output */
+#include <sndfile.h>
+
+/* MDC library */
 #include "mdc-encode-decode/mdc_decode.h"
 #include "mdc-encode-decode/mdc_encode.h"
 #include "mdc-encode-decode/mdc_types.h"
