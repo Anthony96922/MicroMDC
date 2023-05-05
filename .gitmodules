@@ -1,0 +1,3 @@
+[submodule "mdc-encode-decode"]
+	path = mdc-encode-decode
+	url = https://github.com/atmatthewat/mdc-encode-decode
