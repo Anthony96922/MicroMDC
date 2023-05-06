@@ -24,22 +24,24 @@ static void show_help(char *name) {
 		"\x1b[1;36mMicro\x1b[1;35mMDC\x1b[0;0m, an MDC-1200 encoder\n"
 		"Version %s\n"
 		"\n"
-		"  This can create audio files with custom MDC1200 data.\n"
-		" Intended for GMRS but can be used for amateur radio\n"
-		" too. Output files are 8 kHz sampling rate and 8 bit\n"
-		" resolution.\n"
+		"  This can create audio files with custom MDC-1200 data. Intended\n"
+		" for GMRS but can be used for amateur radio too. Output files are 8 kHz\n"
+		" sampling rate and 8 bit resolution. Licensed under GPLv3\n"
 		"\n"
-		" Usage: %s DATAPARAMS -o outfile [-h]\n"
+		" This uses the MDC encoder library by Matthew Kaufman\n"
+		"\n"
+		" Usage: %s DATAPARAMS [-p preamble] -o outfile [-h]\n"
 		"\n"
 		" Where DATAPARAMS can be:\n"
 		"  opcode,arg,unitID\n"
 		"          OR\n"
 		"  opcode,arg,unitID,ext1,ext2,ext3,ext4\n"
 		"\n"
-		"  Data fields are in hex\n"
+		"  All data fields are parsed as hex\n"
 		"\n"
-		"  Example: 01,00,0123 or 01,00,0123,45,56,78,9a\n"
+		"  Example: 01,00,0123 or 01,00,0123,45,67,89,ab\n"
 		"\n"
+		" -p: extra preamble length in bytes\n"
 		" -o: output wav file\n"
 		" -h: show this help\n"
 		"\n", VERSION, name
@@ -55,19 +57,23 @@ int main(int argc, char **argv) {
 	mdc_encoder_t *my_encoder;
 	mdc_sample_t *my_buffer;
 	int ret;
+	int extra_preamble = 0;
 	char file[64 + 1];
 
 	/* data */
 	char *data_str;
-	unsigned char double_fmt = 0;
+	unsigned char double_fmt;
 	unsigned char opcode, arg;
 	unsigned short unit_id;
 	unsigned char ext1, ext2, ext3, ext4;
 
 	memset(file, 0, 64);
 
-	while ((opt = getopt(argc, argv, "o:h")) != -1) {
+	while ((opt = getopt(argc, argv, "p:o:h")) != -1) {
 		switch (opt) {
+			case 'p':
+				extra_preamble = strtoul(optarg, NULL, 10);
+				break;
 			case 'o':
 				strncpy(file, optarg, 64);
 				break;
@@ -87,6 +93,7 @@ int main(int argc, char **argv) {
 			double_fmt = 1;
 		} else if (sscanf(data_str, "%02hhx,%02hhx,%04hx",
 			&opcode, &arg, &unit_id) == 3) {
+			double_fmt = 0;
 		} else {
 			printf("parsing failed.\n");
 			show_help(argv[0]);
@@ -111,6 +118,16 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "encoder init failed.\n");
 		free(my_buffer);
 		return 1;
+	}
+
+	if (extra_preamble) {
+		printf("extra preamble: %d bytes\n", extra_preamble);
+		ret = mdc_encoder_set_preamble(my_encoder, extra_preamble);
+
+		if (ret) {
+			fprintf(stderr, "set extra preamble failed.\n");
+			goto fail;
+		}
 	}
 
 	if (double_fmt) {

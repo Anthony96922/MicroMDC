@@ -32,4 +32,4 @@
 /* for mdc_encoder_close */
 #include "micromdc_extra.h"
 
-#define VERSION 	"1.0.0"
+#define VERSION 	"1.1.0"
