@@ -25,8 +25,8 @@ static void show_help(char *name) {
 		"Version %s\n"
 		"\n"
 		"  This can create audio files with custom MDC-1200 data. Intended\n"
-		" for GMRS but can be used for amateur radio too. Audio 8 bit resolution\n"
-		" and 8 kHz sample rate format. Output is in C include format by default.\n"
+		" for GMRS but can be used for amateur radio too. Audio is in 8 bit resolution\n"
+		" and 8 kHz sample rate format. By default, it produces C array data.\n"
 		" Licensed under GPLv3.\n"
 		"\n"
 		" This uses the MDC encoder library by Matthew Kaufman.\n"
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef WAVEOUT
-	if (!file[0]) {
+	if (!file[0] && !c_inc_out) {
 		fprintf(stderr, "no output file.\n");
 		show_help(argv[0]);
 		return 1;
@@ -181,7 +181,10 @@ int main(int argc, char **argv) {
 	/* if we are at this point the encoder did not blow up */
 
 #ifdef WAVEOUT
-	printf("writing to file: %s.\n", file);
+	if (c_inc_out)
+		printf("writing C array data to stderr.\n");
+	else
+		printf("writing to file: %s.\n", file);
 #endif /* WAVEOUT */
 
 	/* do something with the audio */
