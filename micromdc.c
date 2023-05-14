@@ -25,12 +25,19 @@ static void show_help(char *name) {
 		"Version %s\n"
 		"\n"
 		"  This can create audio files with custom MDC-1200 data. Intended\n"
-		" for GMRS but can be used for amateur radio too. Output files are 8 kHz\n"
-		" sampling rate and 8 bit resolution. Licensed under GPLv3\n"
+		" for GMRS but can be used for amateur radio too. Audio 8 bit resolution\n"
+		" and 8 kHz sample rate format. Output is in C include format by default.\n"
+		" Licensed under GPLv3.\n"
 		"\n"
-		" This uses the MDC encoder library by Matthew Kaufman\n"
+		" This uses the MDC encoder library by Matthew Kaufman.\n"
+		"\n"
+#ifdef WAVEOUT
+		" WAVE file output supported.\n"
 		"\n"
 		" Usage: %s DATAPARAMS [-p preamble] -o outfile [-h]\n"
+#else
+		" Usage: %s DATAPARAMS [-p preamble] [-h]\n"
+#endif /* WAVEOUT */
 		"\n"
 		" Where DATAPARAMS can be:\n"
 		"  opcode,arg,unitID\n"
@@ -42,7 +49,9 @@ static void show_help(char *name) {
 		"  Example: 01,00,0123 or 01,00,0123,45,67,89,ab\n"
 		"\n"
 		" -p: extra preamble length in bytes\n"
+#ifdef WAVEOUT
 		" -o: output wav file\n"
+#endif /* WAVEOUT */
 		" -h: show this help\n"
 		"\n", VERSION, name
 	);
@@ -50,15 +59,21 @@ static void show_help(char *name) {
 
 int main(int argc, char **argv) {
 	int opt;
+#ifdef WAVEOUT
 	SNDFILE *sf;
 	SF_INFO sf_info;
+	char file[64 + 1];
+	const char *short_opts = "p:o:h";
+#else
+	const char *short_opts = "p:h";
+#endif /* WAVEOUT */
 	const int sample_rate = 8000;
 	int samples = sample_rate;
 	mdc_encoder_t *my_encoder;
 	mdc_sample_t *my_buffer;
 	int ret;
 	int extra_preamble = 0;
-	char file[64 + 1];
+	int c_inc_out = 1;
 
 	/* data */
 	char *data_str;
@@ -67,16 +82,21 @@ int main(int argc, char **argv) {
 	unsigned short unit_id;
 	unsigned char ext1, ext2, ext3, ext4;
 
+#ifdef WAVEOUT
 	memset(file, 0, 64);
+#endif /* WAVEOUT */
 
-	while ((opt = getopt(argc, argv, "p:o:h")) != -1) {
+	while ((opt = getopt(argc, argv, short_opts)) != -1) {
 		switch (opt) {
 			case 'p':
 				extra_preamble = strtoul(optarg, NULL, 10);
 				break;
+#ifdef WAVEOUT
 			case 'o':
 				strncpy(file, optarg, 64);
+				c_inc_out = 0;
 				break;
+#endif /* WAVEOUT */
 			case 'h':
 			default:
 				show_help(argv[0]);
@@ -105,11 +125,13 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+#ifdef WAVEOUT
 	if (!file[0]) {
 		fprintf(stderr, "no output file.\n");
 		show_help(argv[0]);
 		return 1;
 	}
+#endif /* WAVEOUT */
 
 	my_encoder = mdc_encoder_new(sample_rate);
 	my_buffer = malloc(samples * sizeof(mdc_sample_t));
@@ -158,10 +180,14 @@ int main(int argc, char **argv) {
 
 	/* if we are at this point the encoder did not blow up */
 
+#ifdef WAVEOUT
 	printf("writing to file: %s.\n", file);
+#endif /* WAVEOUT */
 
 	/* do something with the audio */
 	samples = ret;
+
+#ifdef WAVEOUT
 	memset(&sf_info, 0, sizeof(SF_INFO));
 	sf_info.samplerate = sample_rate;
 	sf_info.channels = 1;
@@ -169,6 +195,11 @@ int main(int argc, char **argv) {
 	sf = sf_open(file, SFM_WRITE, &sf_info);
 	sf_write_short(sf, my_buffer, samples);
 	sf_close(sf);
+#endif /* WAVEOUT */
+
+	/* output C array data */
+	if (c_inc_out)
+		print_c_inc(my_buffer, samples);
 
 	free(my_buffer);
 	mdc_encoder_close(my_encoder);

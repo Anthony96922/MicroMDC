@@ -32,4 +32,7 @@
 /* for mdc_encoder_close */
 #include "micromdc_extra.h"
 
-#define VERSION 	"1.1.0"
+/* for C include format output */
+#include "c_inc.h"
+
+#define VERSION 	"1.2.0"
