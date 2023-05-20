@@ -25,7 +25,7 @@ static void show_help(char *name) {
 		"Version %s\n"
 		"\n"
 		"  This can create audio files with custom MDC-1200 data. Intended\n"
-		" for GMRS but can be used for amateur radio too. Audio is in 8 bit resolution\n"
+		" for GMRS but can be used for amateur radio too. Audio is 8 bit unsigned\n"
 		" and 8 kHz sample rate format. By default, it produces C array data.\n"
 		" Licensed under GPLv3.\n"
 		"\n"
@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	unsigned char double_fmt;
 	unsigned char opcode, arg;
 	unsigned short unit_id;
-	unsigned char ext1, ext2, ext3, ext4;
+	unsigned char ext[4];
 
 #ifdef WAVEOUT
 	memset(file, 0, 64);
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 		if (sscanf(data_str, "%02hhx,%02hhx,%04hx,"
 			"%02hhx,%02hhx,%02hhx,%02hhx",
 			&opcode, &arg, &unit_id,
-			&ext1, &ext2, &ext3, &ext4) == 7) {
+			&ext[0], &ext[1], &ext[2], &ext[3]) == 7) {
 			double_fmt = 1;
 		} else if (sscanf(data_str, "%02hhx,%02hhx,%04hx",
 			&opcode, &arg, &unit_id) == 3) {
@@ -156,9 +156,9 @@ int main(int argc, char **argv) {
 		printf("opt: 0x%02hhx, arg: 0x%02hhx, unitID: 0x%04hx\n"
 			"ext1: 0x%02hhx, ext2: 0x%02hhx, "
 			"ext3: 0x%02hhx, ext4: 0x%02hhx\n",
-			opcode, arg, unit_id, ext1, ext2, ext3, ext4);
+			opcode, arg, unit_id, ext[0], ext[1], ext[2], ext[3]);
 		ret = mdc_encoder_set_double_packet(my_encoder,
-			opcode, arg, unit_id, ext1, ext2, ext3, ext4);
+			opcode, arg, unit_id, ext[0], ext[1], ext[2], ext[3]);
 	} else {
 		printf("opt: 0x%02hhx, arg: 0x%02hhx, unitID: 0x%04hx\n",
 			opcode, arg, unit_id);

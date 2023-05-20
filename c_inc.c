@@ -21,13 +21,11 @@
 void print_c_inc(short *data, int len) {
 	int newline_counter = 0;
 	const int newline_limit = 12;
-	unsigned char sample;
 
 	fprintf(stderr, "\n\nunsigned char audio[%d] = {\n ", len);
 
 	for (int i = 0; i < len; i++) {
-		sample = (data[i] >> 8) & 255;
-		fprintf(stderr, " %4d,", sample);
+		fprintf(stderr, " 0x%02x,", data[i] / 256 + 128);
 		if (++newline_counter == newline_limit) {
 			fprintf(stderr, "\n ");
 			newline_counter = 0;
