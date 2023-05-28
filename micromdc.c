@@ -74,6 +74,7 @@ int main(int argc, char **argv) {
 	int ret;
 	int extra_preamble = 0;
 	int c_inc_out = 1;
+	const int delay = 2400;
 
 	/* data */
 	char *data_str;
@@ -171,7 +172,7 @@ int main(int argc, char **argv) {
 		goto fail;
 	}
 
-	ret = mdc_encoder_get_samples(my_encoder, my_buffer, samples);
+	ret = mdc_encoder_get_samples(my_encoder, my_buffer + delay, samples);
 
 	if (ret < 0) {
 		fprintf(stderr, "get samples failed.\n");
@@ -189,6 +190,12 @@ int main(int argc, char **argv) {
 
 	/* do something with the audio */
 	samples = ret;
+
+	/* include delay in sample count */
+	samples += delay;
+
+	/* blank part of the preamble (it is too long) */
+	memset(my_buffer + delay, 0, 120 * sizeof(short));
 
 #ifdef WAVEOUT
 	memset(&sf_info, 0, sizeof(SF_INFO));

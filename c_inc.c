@@ -25,7 +25,7 @@ void print_c_inc(short *data, int len) {
 	fprintf(stderr, "\n\nunsigned char audio[%d] = {\n ", len);
 
 	for (int i = 0; i < len; i++) {
-		fprintf(stderr, " 0x%02x,", data[i] / 256 + 128);
+		fprintf(stderr, " 0x%02x,", (data[i] + 32767) >> 8);
 		if (++newline_counter == newline_limit) {
 			fprintf(stderr, "\n ");
 			newline_counter = 0;

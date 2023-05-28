@@ -35,4 +35,4 @@
 /* for C include format output */
 #include "c_inc.h"
 
-#define VERSION 	"1.2.1"
+#define VERSION 	"1.2.2"
